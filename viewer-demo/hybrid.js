@@ -507,11 +507,11 @@ async function main() {
 
       readChunks(new Response(blob).body.getReader(), [{ size: 8, type: "magic" }], chunkHandler);
 
-      const link = document.createElement("a");
-      link.download = "model.splatv";
-      link.href = URL.createObjectURL(blob);
-      document.body.appendChild(link);
-      link.click();
+      //const link = document.createElement("a");
+      //link.download = "model.splatv";
+      //link.href = URL.createObjectURL(blob);
+      //document.body.appendChild(link);
+      //link.click();
     } else if (e.data.depthIndex) {
       const { depthIndex, viewProj } = e.data;
       gl.bindBuffer(gl.ARRAY_BUFFER, indexBuffer);
@@ -1002,7 +1002,8 @@ async function main() {
     }
   };
 
-  const url = params.get("url") ? new URL(params.get("url"), "https://huggingface.co/cakewalk/splat-data/resolve/main/") : "model.splatv";
+  const scene = params.get("scene") || "flame";
+  const url = "scenes/" + scene + ".splatv";
   const req = await fetch(url, { mode: "cors", credentials: "omit" });
   if (req.status != 200) throw new Error(req.status + " Unable to load " + req.url);
 
