@@ -288,6 +288,9 @@ async function initXR() {
 
   refSpace = await session.requestReferenceSpace("local");
 
+  const mode = params.get("mode") || "spatial";
+  if (mode === "3dof") console.log("3dof");
+  else console.log("Unknown mode", mode);
   const scene = params.get("scene") || "flame";
   const url = "scenes/" + scene + ".splatv";
   const req = await fetch(url, { mode: "cors", credentials: "omit" });
@@ -341,8 +344,20 @@ async function initXR() {
     gl.uniform1f(u_time, Math.sin(Date.now() / 1000) / 2 + 1 / 2);
     gl.uniform1f(u_fade, fadeFactor);
 
-    let pos = [0, 0, 0, 0];
-    for (let view of pose.views) {
+    let pos = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+    for (let i = 0; i < pose.views.length; i++) {
+      let view = pose.views[i];
+      pos[i][0] = view.transform.matrix[12];
+      pos[i][1] = view.transform.matrix[13];
+      pos[i][2] = view.transform.matrix[14];
+    }
+    let currpos = [
+      (pos[0][0] + pos[1][0] ) / 2,
+      (pos[0][1] + pos[1][1] ) / 2,
+      (pos[0][2] + pos[1][2] ) / 2
+    ];
+    for (let i = 0; i < pose.views.length; i++) {
+      let view = pose.views[i];
       let viewport = glLayer.getViewport(view);
       gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
       let projectionMatrix = view.projectionMatrix;
@@ -350,12 +365,20 @@ async function initXR() {
       gl.uniformMatrix4fv(u_projection, false, projectionMatrix);
 
       gl.uniform2fv(u_focal, new Float32Array([(projectionMatrix[0] * viewport.width) / 2, -(projectionMatrix[5] * viewport.height) / 2]));
+
+      if (mode === "3dof" && startPos) {
+        let delta = [
+          pos[i][0] - currpos[0],
+          pos[i][1] - currpos[1],
+          pos[i][2] - currpos[2],
+        ];
+        view.transform.matrix[12] = startPos[2][0] + delta[0];
+        view.transform.matrix[13] = startPos[2][1] + delta[1];
+        view.transform.matrix[14] = startPos[2][2] + delta[2];
+      }
+
       const transformedView = multiply4(view.transform.inverse.matrix, worldTransform);
       lastTransformedView = transformedView;
-      pos[0] += view.transform.matrix[12];
-      pos[1] += view.transform.matrix[13];
-      pos[2] += view.transform.matrix[14];
-      pos[3] += 1;
 
       gl.uniformMatrix4fv(u_view, false, transformedView);
       gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
@@ -366,19 +389,18 @@ async function initXR() {
     if (startPos) {
       let dist = 0;
       for (let i = 0; i < 3; i++) {
-          pos[i] /= pos[3];
-          dist += (pos[i] - startPos[i]) * (pos[i] - startPos[i]);
+          dist += (currpos[i] - startPos[2][i]) * (currpos[i] - startPos[2][i]);
       }
-      console.log(pos[0], pos[1], pos[2]);
+      console.log(currpos[0], currpos[1], currpos[2]);
       dist = Math.sqrt(dist);
       fadeFactor = (dist - innerRadius) / (outerRadius - innerRadius);
     } else {
       if (throwawayPoses < 5) {
         throwawayPoses += 1;
       } else {
-        for (let i = 0; i < 4; i++) pos[i] /= pos[3];
         startPos = pos;
-        console.log("start", pos[0], pos[1], pos[2]);
+        startPos[2] = currpos;
+        console.log("start", currpos[0], currpos[1], currpos[2]);
       }
     }
     session.requestAnimationFrame(onXRFrame);
