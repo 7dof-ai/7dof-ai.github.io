@@ -117,7 +117,7 @@ const fragmentShaderSource = `
       float A = -dot(vPosition, vPosition);
       if (A < -4.0) discard;
       float B = exp(A) * vColor.a;
-      fragColor = vec4((1.0 - fadeFactor) * B * vColor.rgb, B);
+      fragColor = vec4((1.0 - fadeFactor) * B * vColor.rgb, (1.0 - fadeFactor) * B);
   }
   
   `.trim();
