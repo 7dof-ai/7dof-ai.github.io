@@ -368,22 +368,29 @@ async function initXR() {
 
       gl.uniform2fv(u_focal, new Float32Array([(projectionMatrix[0] * viewport.width) / 2, -(projectionMatrix[5] * viewport.height) / 2]));
 
+      let newPosition = [
+        view.transform.position.x,
+        view.transform.position.y,
+        view.transform.position.z
+      ];
       if (mode === "3dof" && startPos) {
         let delta = [
           pos[i][0] - currpos[0],
           pos[i][1] - currpos[1],
           pos[i][2] - currpos[2],
         ];
-        view.transform.matrix[12] = startPos[2][0] + delta[0];
-        view.transform.matrix[13] = startPos[2][1] + delta[1];
-        view.transform.matrix[14] = startPos[2][2] + delta[2];
+        newPosition[0] = startPos[2][0] + delta[0];
+        newPosition[1] = startPos[2][1] + delta[1];
+        newPosition[2] = startPos[2][2] + delta[2];
       }
 
-      view.transform.matrix[12] *= worldScale;
-      view.transform.matrix[13] *= worldScale;
-      view.transform.matrix[14] *= worldScale;
+      newPosition[0] *= worldScale;
+      newPosition[1] *= worldScale;
+      newPosition[2] *= worldScale;
 
-      const transformedView = multiply4(view.transform.inverse.matrix, worldTransform);
+      let newTransform = new XRRigidTransform({x: newPosition[0], y: newPosition[1], z: newPosition[2], w: 1}, view.transform.orientation);
+
+      const transformedView = multiply4(newTransform.inverse.matrix, worldTransform);
       lastTransformedView = transformedView;
 
       gl.uniformMatrix4fv(u_view, false, transformedView);
