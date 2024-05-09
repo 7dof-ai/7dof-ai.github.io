@@ -1,9 +1,13 @@
 let refSpace;
 let gl;
 
-let innerRadius = 0.3;
-let outerRadius = 0.6;
-let worldTransform = [0.99, -0.05, 0.16, 0, -0.05, -1, -0.05, 0, 0.16, 0.04, -0.99, 0, -0.08, 1.63, -0.1, 1];
+let innerRadius = 0.4;
+let outerRadius = 0.8;
+let worldTransform = [
+    0.99, -0.05, 0.16, 0,
+    -0.05, -1, -0.05, 0,
+    0.16, 0.04, -0.99, 0,
+    -0.08, 1.63, -0.1, 1];
 
 const params = new URLSearchParams(location.search);
 try {
