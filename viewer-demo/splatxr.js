@@ -282,18 +282,15 @@ async function initXR() {
       gl.bufferData(gl.ARRAY_BUFFER, depthIndex, gl.DYNAMIC_DRAW);
       vertexCount = e.data.vertexCount;
       //   session.requestAnimationFrame(onXRFrame);
-      console.log("depth sorted", vertexCount, depthIndex);
+      // console.log("depth sorted", vertexCount, depthIndex);
     }
   };
 
   refSpace = await session.requestReferenceSpace("local");
 
   const mode = params.get("mode") || "spatial";
-  if (mode === "3dof") console.log("3dof");
-  else console.log("Unknown mode", mode);
   const scene = params.get("scene") || "flame";
-  const worldScale = parseFloat(params.get("worldScale")) || 3;
-  console.log("scale", worldScale);
+  const worldScale = parseFloat(params.get("worldScale")) || 1;
   const url = "scenes/" + scene + ".splatv";
   const req = await fetch(url, { mode: "cors", credentials: "omit" });
   if (req.status != 200) throw new Error(req.status + " Unable to load " + req.url);
@@ -404,7 +401,7 @@ async function initXR() {
       for (let i = 0; i < 3; i++) {
           dist += (currpos[i] - startPos[2][i]) * (currpos[i] - startPos[2][i]);
       }
-      console.log(currpos[0], currpos[1], currpos[2]);
+      //console.log(currpos[0], currpos[1], currpos[2]);
       dist = Math.sqrt(dist);
       fadeFactor = (dist - innerRadius) / (outerRadius - innerRadius);
     } else {
