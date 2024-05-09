@@ -1,6 +1,8 @@
 let refSpace;
 let gl;
 
+let innerRadius = 0.3;
+let outerRadius = 0.6;
 let worldTransform = [0.99, -0.05, 0.16, 0, -0.05, -1, -0.05, 0, 0.16, 0.04, -0.99, 0, -0.08, 1.63, -0.1, 1];
 
 const params = new URLSearchParams(location.search);
@@ -103,6 +105,8 @@ const vertexShaderSource = `
 const fragmentShaderSource = `
   #version 300 es
   precision highp float;
+
+  uniform float fadeFactor;
   
   in vec4 vColor;
   in vec2 vPosition;
@@ -113,7 +117,7 @@ const fragmentShaderSource = `
       float A = -dot(vPosition, vPosition);
       if (A < -4.0) discard;
       float B = exp(A) * vColor.a;
-      fragColor = vec4(B * vColor.rgb, B);
+      fragColor = vec4((1.0 - fadeFactor) * B * vColor.rgb, B);
   }
   
   `.trim();
@@ -210,6 +214,9 @@ async function initXR() {
     xrCompatible: true,
   });
 
+  let startPos = null;
+  let throwawayPoses = 0;
+  let fadeFactor = 0;
   let lastTransformedView;
   canvas.onclick = () => {
     if (lastTransformedView) {
@@ -231,6 +238,7 @@ async function initXR() {
   const u_focal = gl.getUniformLocation(program, "focal");
   const u_view = gl.getUniformLocation(program, "view");
   const u_time = gl.getUniformLocation(program, "time");
+  const u_fade = gl.getUniformLocation(program, "fadeFactor");
 
   // positions
   const triangleVertices = new Float32Array([-2, -2, 2, -2, 2, 2, -2, 2]);
@@ -331,7 +339,9 @@ async function initXR() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     gl.uniform1f(u_time, Math.sin(Date.now() / 1000) / 2 + 1 / 2);
+    gl.uniform1f(u_fade, fadeFactor);
 
+    let pos = [0, 0, 0, 0];
     for (let view of pose.views) {
       let viewport = glLayer.getViewport(view);
       gl.viewport(viewport.x, viewport.y, viewport.width, viewport.height);
@@ -342,12 +352,34 @@ async function initXR() {
       gl.uniform2fv(u_focal, new Float32Array([(projectionMatrix[0] * viewport.width) / 2, -(projectionMatrix[5] * viewport.height) / 2]));
       const transformedView = multiply4(view.transform.inverse.matrix, worldTransform);
       lastTransformedView = transformedView;
+      pos[0] += view.transform.matrix[12];
+      pos[1] += view.transform.matrix[13];
+      pos[2] += view.transform.matrix[14];
+      pos[3] += 1;
 
       gl.uniformMatrix4fv(u_view, false, transformedView);
       gl.drawArraysInstanced(gl.TRIANGLE_FAN, 0, 4, vertexCount);
 
       const viewProj = multiply4(projectionMatrix, transformedView);
       worker.postMessage({ view: viewProj });
+    }
+    if (startPos) {
+      let dist = 0;
+      for (let i = 0; i < 3; i++) {
+          pos[i] /= pos[3];
+          dist += (pos[i] - startPos[i]) * (pos[i] - startPos[i]);
+      }
+      console.log(pos[0], pos[1], pos[2]);
+      dist = Math.sqrt(dist);
+      fadeFactor = (dist - innerRadius) / (outerRadius - innerRadius);
+    } else {
+      if (throwawayPoses < 5) {
+        throwawayPoses += 1;
+      } else {
+        for (let i = 0; i < 4; i++) pos[i] /= pos[3];
+        startPos = pos;
+        console.log("start", pos[0], pos[1], pos[2]);
+      }
     }
     session.requestAnimationFrame(onXRFrame);
   }
