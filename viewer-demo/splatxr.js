@@ -292,6 +292,8 @@ async function initXR() {
   if (mode === "3dof") console.log("3dof");
   else console.log("Unknown mode", mode);
   const scene = params.get("scene") || "flame";
+  const worldScale = parseFloat(params.get("worldScale")) || 3;
+  console.log("scale", worldScale);
   const url = "scenes/" + scene + ".splatv";
   const req = await fetch(url, { mode: "cors", credentials: "omit" });
   if (req.status != 200) throw new Error(req.status + " Unable to load " + req.url);
@@ -376,6 +378,10 @@ async function initXR() {
         view.transform.matrix[13] = startPos[2][1] + delta[1];
         view.transform.matrix[14] = startPos[2][2] + delta[2];
       }
+
+      view.transform.matrix[12] *= worldScale;
+      view.transform.matrix[13] *= worldScale;
+      view.transform.matrix[14] *= worldScale;
 
       const transformedView = multiply4(view.transform.inverse.matrix, worldTransform);
       lastTransformedView = transformedView;
