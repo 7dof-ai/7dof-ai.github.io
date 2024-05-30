@@ -10,6 +10,9 @@ let worldTransform = [
     -0.08, 1.63, -0.1, 1];
 
 const params = new URLSearchParams(location.search);
+if (params.has("transform")) {
+  worldTransform = JSON.parse(decodeURIComponent(params.get("transform")));
+}
 try {
   worldTransform = JSON.parse(decodeURIComponent(location.hash.slice(1)));
 } catch (err) {}
