@@ -1,8 +1,8 @@
 let refSpace;
 let gl;
 
-let innerRadius = 0.4;
-let outerRadius = 0.8;
+let innerRadius = 2;
+let outerRadius = 4;
 let worldTransform = [
     0.99, -0.05, 0.16, 0,
     -0.05, -1, -0.05, 0,
